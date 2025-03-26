@@ -105,106 +105,102 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* File Tabs */}
-      <div className="flex gap-1 items-center flex-wrap border-b">
-        {Object.keys(files).map((file) => (
-          <div
-            key={file}
-            className={`flex items-center px-3 py-1 text-sm border-t border-l border-r rounded-t ${
-              file === activeFile
-                ? "bg-gray-800 text-white"
-                : "bg-gray-200 text-black"
-            }`}
-          >
-            <span
-              onClick={() => {
-                setActiveFile(file);
-                onTabSwitch(file);
-                setOutput("");
-              }}
-              className="cursor-pointer pr-2"
+      {/* File Tabs and Reset Workspace */}
+      <div className="flex items-center justify-between border-b pb-1">
+        <div className="flex gap-1 flex-wrap items-center">
+          {Object.keys(files).map((file) => (
+            <div
+              key={file}
+              className={`flex items-center px-3 py-1 text-sm border-t border-l border-r rounded-t ${
+                file === activeFile
+                  ? "bg-gray-800 text-white"
+                  : "bg-gray-200 text-black"
+              }`}
             >
-              {file}
-            </span>
-            <button
-              onClick={() => {
-                if (Object.keys(files).length === 1) {
-                  alert("You must have at least one file open.");
-                  return;
-                }
-                const updated = { ...files };
-                delete updated[file];
-                setFiles(updated);
-                if (file === activeFile) {
-                  const remaining = Object.keys(updated);
-                  const fallback = remaining[0];
-                  setActiveFile(fallback);
-                  onTabSwitch(fallback);
+              <span
+                onClick={() => {
+                  setActiveFile(file);
+                  onTabSwitch(file);
                   setOutput("");
-                }
-              }}
-              className="ml-auto text-xs text-gray-400 hover:text-red-500"
-              title={`Close ${file}`}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+                }}
+                className="cursor-pointer pr-2"
+              >
+                {file}
+              </span>
+              <button
+                onClick={() => {
+                  if (Object.keys(files).length === 1) {
+                    alert("You must have at least one file open.");
+                    return;
+                  }
+                  const updated = { ...files };
+                  delete updated[file];
+                  setFiles(updated);
+                  if (file === activeFile) {
+                    const remaining = Object.keys(updated);
+                    const fallback = remaining[0];
+                    setActiveFile(fallback);
+                    onTabSwitch(fallback);
+                    setOutput("");
+                  }
+                }}
+                className="ml-auto text-xs text-gray-400 hover:text-red-500"
+                title={`Close ${file}`}
+              >
+                ×
+              </button>
+            </div>
+          ))}
 
-        {/* New File */}
-        <button
-          onClick={() => {
-            const name = prompt("Enter new file name (e.g., utils.py)");
-            if (
-              name &&
-              (name.endsWith(".py") || name.endsWith(".js")) &&
-              !files[name]
-            ) {
-              setFiles({ ...files, [name]: "" });
-              setActiveFile(name);
-              onTabSwitch(name);
-              setOutput("");
-            } else if (name && !name.endsWith(".py") && !name.endsWith(".js")) {
-              alert("Please use .py or .js extension.");
-            }
-          }}
-          className="px-2 py-1 text-sm bg-green-600 text-white rounded"
-        >
-          New File
-        </button>
+          {/* New File */}
+          <button
+            onClick={() => {
+              const name = prompt("Enter new file name (e.g., utils.py)");
+              if (
+                name &&
+                (name.endsWith(".py") || name.endsWith(".js")) &&
+                !files[name]
+              ) {
+                setFiles({ ...files, [name]: "" });
+                setActiveFile(name);
+                onTabSwitch(name);
+                setOutput("");
+              } else if (name && !name.endsWith(".py") && !name.endsWith(".js")) {
+                alert("Please use .py or .js extension.");
+              }
+            }}
+            className="px-3 text-lg font-bold bg-gray-300 text-black rounded"
+            title="New File"
+          >
+            +
+          </button>
+        </div>
 
-        {/* Upload File */}
-        <label className="bg-purple-600 text-white px-2 py-1 text-sm rounded cursor-pointer">
-          Upload
-          <input
-            type="file"
-            accept=".py,.js"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </label>
+        {/* Upload + Reset */}
+        <div className="flex gap-2 items-center">
+          <label className="bg-purple-600 text-white px-3 py-1 text-sm rounded cursor-pointer">
+            Upload
+            <input
+              type="file"
+              accept=".py,.js"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </label>
 
-        {/* Reset Button */}
-        <button
-          onClick={() => {
-            if (confirm("Are you sure you want to reset your workspace?")) {
-              localStorage.removeItem(LOCAL_FILES_KEY);
-              localStorage.removeItem(LOCAL_ACTIVE_KEY);
-              window.location.reload();
-            }
-          }}
-          className="px-2 py-1 text-sm bg-red-600 text-white rounded"
-        >
-          Reset Workspace
-        </button>
-
-        {/* Diff Toggle */}
-        <button
-          onClick={() => setShowDiff((prev) => !prev)}
-          className="px-2 py-1 text-sm bg-yellow-500 text-black rounded"
-        >
-          {showDiff ? "Hide Diff" : "Show Changes"}
-        </button>
+          <button
+            onClick={() => {
+              if (confirm("Are you sure you want to reset your workspace?")) {
+                localStorage.removeItem(LOCAL_FILES_KEY);
+                localStorage.removeItem(LOCAL_ACTIVE_KEY);
+                window.location.reload();
+              }
+            }}
+            className="px-3 py-1 text-sm bg-red-600 text-white rounded"
+          >
+            Reset Workspace
+          </button>
+        </div>
       </div>
 
       {/* Monaco Editor */}
@@ -226,7 +222,37 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
         }}
       />
 
-      {/* Diff Editor */}
+      {/* Action Buttons Row */}
+      <div className="flex items-center justify-between mt-2">
+        <button
+          onClick={handleRun}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Run
+        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() =>
+              setShowDiff((prev) => !prev)
+            }
+            className="bg-yellow-500 text-black px-4 py-2 rounded"
+          >
+            {showDiff ? "Hide Changes" : "Show Changes"}
+          </button>
+
+          <button
+            onClick={() =>
+              downloadFile(activeFile, files[activeFile])
+            }
+            className="bg-green-600 text-white px-4 py-2 rounded"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+
+      {/* Diff Viewer */}
       {showDiff && originalFiles[activeFile] && (
         <div className="mt-6 border-t pt-4">
           <h3 className="text-lg font-semibold mb-2">Code Changes</h3>
@@ -244,23 +270,7 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex gap-3 mt-2">
-        <button
-          onClick={handleRun}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Run
-        </button>
-        <button
-          onClick={() => downloadFile(activeFile, files[activeFile])}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          Save
-        </button>
-      </div>
-
-      {/* Output */}
+      {/* Output Block */}
       <div className="mt-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-lg">Output</h3>
