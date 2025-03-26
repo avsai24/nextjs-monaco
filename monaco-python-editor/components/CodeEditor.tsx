@@ -1,8 +1,8 @@
 "use client";
 
-import Editor from "@monaco-editor/react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import Editor, { DiffEditor } from "@monaco-editor/react";
 
 interface CodeEditorProps {
   onRun: (code: string, filename: string) => void;
@@ -16,9 +16,11 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
   const [files, setFiles] = useState<Record<string, string>>({
     "main.py": `# main.py\nprint("Hello from main.py")`,
   });
+  const [originalFiles, setOriginalFiles] = useState<Record<string, string>>({});
   const [activeFile, setActiveFile] = useState("main.py");
-  const [output, setOutput] = useState(""); // ✅ Local output for animation
+  const [output, setOutput] = useState("");
   const [status, setStatus] = useState<"success" | "error" | null>(null);
+  const [showDiff, setShowDiff] = useState(false);
 
   const getLanguage = (filename: string) =>
     filename.endsWith(".js") ? "javascript" : "python";
@@ -42,6 +44,7 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
         ...prev,
         [file.name]: content,
       }));
+      setOriginalFiles((prev) => ({ ...prev, [file.name]: content }));
       setActiveFile(file.name);
       onTabSwitch(file.name);
     };
@@ -84,7 +87,6 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
     }
   };
 
-  // Load from localStorage
   useEffect(() => {
     const savedFiles = localStorage.getItem(LOCAL_FILES_KEY);
     const savedActive = localStorage.getItem(LOCAL_ACTIVE_KEY);
@@ -93,7 +95,6 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
     if (savedActive) setActiveFile(savedActive);
   }, []);
 
-  // Save to localStorage
   useEffect(() => {
     localStorage.setItem(LOCAL_FILES_KEY, JSON.stringify(files));
   }, [files]);
@@ -119,7 +120,7 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
               onClick={() => {
                 setActiveFile(file);
                 onTabSwitch(file);
-                setOutput(""); // Clear output on switch
+                setOutput("");
               }}
               className="cursor-pointer pr-2"
             >
@@ -131,12 +132,9 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
                   alert("You must have at least one file open.");
                   return;
                 }
-
                 const updated = { ...files };
                 delete updated[file];
-
                 setFiles(updated);
-
                 if (file === activeFile) {
                   const remaining = Object.keys(updated);
                   const fallback = remaining[0];
@@ -199,6 +197,14 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
         >
           Reset Workspace
         </button>
+
+        {/* Diff Toggle */}
+        <button
+          onClick={() => setShowDiff((prev) => !prev)}
+          className="px-2 py-1 text-sm bg-yellow-500 text-black rounded"
+        >
+          {showDiff ? "Hide Diff" : "Show Changes"}
+        </button>
       </div>
 
       {/* Monaco Editor */}
@@ -220,6 +226,24 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
         }}
       />
 
+      {/* Diff Editor */}
+      {showDiff && originalFiles[activeFile] && (
+        <div className="mt-6 border-t pt-4">
+          <h3 className="text-lg font-semibold mb-2">Code Changes</h3>
+          <DiffEditor
+            height="400px"
+            theme="vs-dark"
+            language={getLanguage(activeFile)}
+            original={originalFiles[activeFile] || ""}
+            modified={files[activeFile]}
+            options={{
+              readOnly: true,
+              renderSideBySide: true,
+            }}
+          />
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex gap-3 mt-2">
         <button
@@ -228,7 +252,6 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
         >
           Run
         </button>
-
         <button
           onClick={() => downloadFile(activeFile, files[activeFile])}
           className="bg-green-600 text-white px-4 py-2 rounded"
@@ -238,41 +261,41 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
       </div>
 
       {/* Output */}
-    <div className="mt-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-lg">Output</h3>
-        {output && (
-          <span
-            className={`text-xs px-2 py-1 rounded ${
-              status === "error"
-                ? "bg-red-800 text-red-200"
-                : "bg-green-800 text-green-200"
-            }`}
-          >
-            {status === "error" ? "Error" : "Success"}
-          </span>
-        )}
-      </div>
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-lg">Output</h3>
+          {output && (
+            <span
+              className={`text-xs px-2 py-1 rounded ${
+                status === "error"
+                  ? "bg-red-800 text-red-200"
+                  : "bg-green-800 text-green-200"
+              }`}
+            >
+              {status === "error" ? "Error" : "Success"}
+            </span>
+          )}
+        </div>
 
-      <AnimatePresence>
-        {output && (
-          <motion.pre
-            key={output}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className={`p-4 rounded whitespace-pre-wrap overflow-auto text-sm ${
-              status === "error"
-                ? "bg-red-900 text-red-200"
-                : "bg-gray-900 text-green-400"
-            }`}
-          >
-            {output}
-          </motion.pre>
-        )}
-      </AnimatePresence>
-    </div>
+        <AnimatePresence>
+          {output && (
+            <motion.pre
+              key={output}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className={`p-4 rounded whitespace-pre-wrap overflow-auto text-sm ${
+                status === "error"
+                  ? "bg-red-900 text-red-200"
+                  : "bg-gray-900 text-green-400"
+              }`}
+            >
+              {output}
+            </motion.pre>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
