@@ -20,22 +20,22 @@ An intelligent, minimal, and professional multi-language code playground built w
 ## 📸 Screenshots
 
 ### Python Execution:
-![Python Execution](images/js_output.png)  
+![Python Execution](images/one.png)  
 
 ### JavaScript Execution:
-![JavaScript Execution](images/python_output.png)  
+![JavaScript Execution](images/two.png)  
 
 ### Creating New File:
-![Creating New File](images/python_output.png)  
+![Creating New File](images/three.png)  
 
 ### Uploading Existing File
-![Uploading Existing File](images/python_output.png) 
+![Uploading Existing File](images/four.png) 
 
 ### View Code Changes
-![Seeing Code Changes](images/python_output.png)  
+![Seeing Code Changes](images/five.png)  
 
 ### Gemini AI-powered inline code suggestions
-![AI predicts Next Word](images/python_output.png)  
+![AI predicts Next Word](images/six.png)  
 
 ---
 
