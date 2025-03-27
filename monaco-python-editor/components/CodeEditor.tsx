@@ -205,22 +205,67 @@ export default function CodeEditor({ onRun, onTabSwitch }: CodeEditorProps) {
 
       {/* Monaco Editor */}
       <Editor
-        height="500px"
-        language={getLanguage(activeFile)}
-        value={files[activeFile]}
-        theme="vs-dark"
-        onChange={(value) =>
-          setFiles((prev) => ({
-            ...prev,
-            [activeFile]: value || "",
-          }))
-        }
-        options={{
-          fontSize: 16,
-          minimap: { enabled: false },
-          wordWrap: "on",
-        }}
-      />
+  height="500px"
+  language={getLanguage(activeFile)}
+  value={files[activeFile]}
+  theme="vs-dark"
+  onChange={(value) =>
+    setFiles((prev) => ({
+      ...prev,
+      [activeFile]: value || "",
+    }))
+  }
+  onMount={(editor, monaco) => {
+    console.log("🖊️ Monaco editor mounted");
+
+    const language = getLanguage(activeFile);
+
+    monaco.languages.registerInlineCompletionsProvider(language, {
+      async provideInlineCompletions(model, position) {
+        const codeUntilCursor = model.getValueInRange({
+          startLineNumber: 1,
+          startColumn: 1,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column,
+        });
+
+        const res = await fetch("/api/suggest-inline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: codeUntilCursor, language }),
+        });
+
+        const { suggestion } = await res.json();
+
+        return {
+          items: suggestion
+            ? [
+                {
+                  insertText: suggestion,
+                  range: {
+                    startLineNumber: position.lineNumber,
+                    startColumn: position.column,
+                    endLineNumber: position.lineNumber,
+                    endColumn: position.column,
+                  },
+                },
+              ]
+            : [],
+          dispose: () => {},
+        };
+      },
+      freeInlineCompletions() {},
+    });
+  }}
+  options={{
+    fontSize: 16,
+    minimap: { enabled: false },
+    wordWrap: "on",
+    inlineSuggest: {
+      enabled: true,
+    },
+  }}
+/>
 
       {/* Action Buttons Row */}
       <div className="flex items-center justify-between mt-2">
